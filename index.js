@@ -50,7 +50,7 @@ async function main() {
   // Inicia o processo de repostagem para todos os pares
   setInterval(async () => {
     await processAllChannelPairs(client);
-  }, 30 * 60 * 1000); // 30 segundos (ajuste se quiser mais tempo)
+  }, 5 * 60 * 1000); // 30 segundos (ajuste se quiser mais tempo)
 }
 
 async function processAllChannelPairs(client) {
