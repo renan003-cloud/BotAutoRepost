@@ -1,0 +1,31 @@
+# Versão alternativa com instalação mais gradual
+# Use este Dockerfile se o principal ainda causar problemas de rate limiting
+
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Configurações agressivas do npm para reduzir requisições
+RUN npm config set fetch-retries 1 && \
+    npm config set fetch-retry-mintimeout 30000 && \
+    npm config set fetch-retry-maxtimeout 180000 && \
+    npm config set fetch-timeout 90000 && \
+    npm config set progress false && \
+    npm config set loglevel error && \
+    npm config set audit false && \
+    npm config set fund false && \
+    npm config set registry https://registry.npmjs.org/
+
+# Copia apenas package.json primeiro
+COPY package.json ./
+
+# Instala dependências uma por vez com delay (se necessário)
+# Esta abordagem é mais lenta mas reduz picos de requisições
+RUN npm install telegram@2.26.22 --no-audit --no-fund --production --prefer-offline && \
+    npm install input@1.0.1 --no-audit --no-fund --production --prefer-offline
+
+# Copia o restante do código
+COPY . .
+
+CMD ["node", "index.js"]
+
