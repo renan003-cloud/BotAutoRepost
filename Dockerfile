@@ -1,5 +1,8 @@
-# Usa a imagem oficial do Node.js
+# Usa a imagem oficial do Node.js (versão LTS)
 FROM node:20-alpine
+
+# Garante que estamos usando a versão correta
+RUN node --version && npm --version
 
 # Define a pasta de trabalho dentro do contêiner
 WORKDIR /app
@@ -20,11 +23,24 @@ COPY .npmrc ./
 
 # Instala as dependências de produção
 RUN echo "=== Instalando dependências ===" && \
-    (npm ci --no-audit --no-fund --production || npm install --no-audit --no-fund --production) && \
+    if [ -f package-lock.json ]; then \
+        echo "Tentando npm ci..." && \
+        npm ci --no-audit --no-fund --production || \
+        (echo "npm ci falhou, tentando npm install..." && npm install --no-audit --no-fund --production); \
+    else \
+        echo "package-lock.json não encontrado, usando npm install..." && \
+        npm install --no-audit --no-fund --production; \
+    fi && \
     echo "=== Verificando node_modules ===" && \
-    ls -la node_modules/ && \
+    ls -la node_modules/ | head -10 && \
     echo "=== Verificando módulo telegram ===" && \
-    (test -d node_modules/telegram && echo "✓ Diretório telegram existe" || echo "✗ Diretório telegram NÃO existe") && \
+    if [ -d "node_modules/telegram" ]; then \
+        echo "✓ Diretório telegram existe"; \
+        ls -la node_modules/telegram/ | head -5; \
+    else \
+        echo "✗ ERRO: Diretório telegram NÃO existe!"; \
+        exit 1; \
+    fi && \
     echo "=== Testando módulo telegram ===" && \
     node -e "const tg = require('telegram'); console.log('✓ telegram carregado com sucesso!')" && \
     echo "=== Dependências OK ==="
