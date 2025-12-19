@@ -19,13 +19,24 @@ COPY package.json package-lock.json ./
 COPY .npmrc ./
 
 # Instala as dependências de produção
-RUN npm ci --no-audit --no-fund --production
-
-# Verifica se o módulo telegram foi instalado
-RUN node -e "require('telegram'); console.log('✓ Módulo telegram instalado com sucesso!')"
+RUN echo "=== Instalando dependências ===" && \
+    (npm ci --no-audit --no-fund --production || npm install --no-audit --no-fund --production) && \
+    echo "=== Verificando node_modules ===" && \
+    ls -la node_modules/ && \
+    echo "=== Verificando módulo telegram ===" && \
+    (test -d node_modules/telegram && echo "✓ Diretório telegram existe" || echo "✗ Diretório telegram NÃO existe") && \
+    echo "=== Testando módulo telegram ===" && \
+    node -e "const tg = require('telegram'); console.log('✓ telegram carregado com sucesso!')" && \
+    echo "=== Dependências OK ==="
 
 # Copia o restante do código da sua aplicação
-COPY . .
+# IMPORTANTE: node_modules já está instalado, não copiar novamente
+COPY index.js repost.js generate_session.js ./
+
+# Verificação final antes de iniciar
+RUN echo "=== Verificação final ===" && \
+    node -e "require('telegram'); console.log('✓ Módulo telegram disponível!')" && \
+    echo "=== Pronto para iniciar ==="
 
 # Inicia a aplicação
 CMD ["node", "index.js"]
